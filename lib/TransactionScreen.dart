@@ -68,8 +68,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ).then((value) {
-                if (value == true) _refreshTransactions();
+                if (value == true) {
+                  _refreshTransactions();
+                  _showFancySnackBar("Transaction added successfully!", Icons.attach_money, Color(0xFF3E4FBD));
+                }
               });
+
             }
           },
           backgroundColor: Colors.transparent, // Transparent to show gradient
@@ -228,7 +232,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   );
-                  if (result == true) _refreshTransactions();
+                  if (result == true) {
+                    _refreshTransactions();
+                    _showFancySnackBar("Transaction updated successfully!", Icons.attach_money, Color(0xFF3E4FBD));
+                  }
                 },
               ),
               Divider(),
@@ -253,21 +260,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     bool isDeleted = await TransactionAPI().deleteTransaction(transaction['expenseID']);
                     if (isDeleted) {
                       _refreshTransactions();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Transaction deleted successfully!"),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      _showFancySnackBar("Transaction deleted successfully!", Icons.attach_money, Color(0xFF3E4FBD));
+
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Failed to delete transaction. Please try again."),
-                          backgroundColor: Colors.red,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      _showFancySnackBar("Failed to delete transaction. Please try again.", Icons.error, Color(0xFF3E4FBD));
+
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -287,6 +284,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+
+  void _showFancySnackBar(String message, IconData icon, Color iconColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: iconColor),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
 
 
 

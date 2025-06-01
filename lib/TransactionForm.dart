@@ -38,7 +38,6 @@ class _TransactionFormState extends State<TransactionForm> {
     if (widget.map != null) {
       _nameController.text = widget.map!['userName'] ?? '';
       _amountController.text = widget.map!['amount'].toString()??"0.0";
-
       transactionType = widget.map!['transactionType'].toString().toLowerCase();
       _descriptionController.text = widget.map!['description']??'';
     }
@@ -79,7 +78,8 @@ class _TransactionFormState extends State<TransactionForm> {
         Amount: double.parse(_amountController.text),
         transactionDate: _selectedDate ?? DateTime.now(),
         transactionType: transactionType.toLowerCase(),
-        description: _descriptionController.text,
+        description: _descriptionController.text.isEmpty ? "No Description" : _descriptionController.text,
+
       );
       // Print the JSON payload for debugging
       print("******************${transModel}");
@@ -267,8 +267,8 @@ class _TransactionFormState extends State<TransactionForm> {
                             ),
                             const SizedBox(height: 20),
                             // Description Field
-                            _buildTextField(_descriptionController, "Description", Icons.description,
-                                maxLines: 2),
+                            _buildTextField(_descriptionController, "Description", Icons.description, maxLines: 2, isRequired: false),
+
                             const SizedBox(height: 30),
                             // Buttons Row
                             Row(
@@ -326,8 +326,14 @@ class _TransactionFormState extends State<TransactionForm> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon,
-      {TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
+  Widget _buildTextField(
+      TextEditingController controller,
+      String label,
+      IconData icon, {
+        TextInputType keyboardType = TextInputType.text,
+        int maxLines = 1,
+        bool isRequired = true, // <-- New parameter
+      }) {
     return TextFormField(
       cursorColor: Colors.black,
       controller: controller,
@@ -343,12 +349,13 @@ class _TransactionFormState extends State<TransactionForm> {
         ),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (isRequired && (value == null || value.trim().isEmpty)) {
           return 'Please enter $label';
         }
         return null;
       },
     );
   }
+
 
 }

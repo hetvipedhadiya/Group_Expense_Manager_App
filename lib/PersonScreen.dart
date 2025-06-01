@@ -78,6 +78,7 @@ class _PersonScreenState extends State<PersonScreen> {
             );
             if (result == true) {
               _refreshPersons();
+              _showFancySnackBar("User added successfully!", Icons.person, Color(0xFF3E4FBD));
             }
           },
           child: Icon(Icons.add, color: Colors.white),
@@ -182,6 +183,7 @@ class _PersonScreenState extends State<PersonScreen> {
                       );
                       if (result == true) {
                         _refreshPersons();
+                        _showFancySnackBar("User updated successfully!", Icons.person, Color(0xFF3E4FBD));
                       }
                     },
                   ),
@@ -194,33 +196,8 @@ class _PersonScreenState extends State<PersonScreen> {
                       bool isDeleted = await PersonApi().deleteUser(person['userID']);
                       if (isDeleted) {
                         _refreshPersons();
+                        _showFancySnackBar("User deleted successfully!", Icons.person, Color(0xFF3E4FBD));
                       }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.event, color: Color(0xFF3E4FBD),),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  "User deleted successfully!",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          margin: EdgeInsets.all(16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
                     },
                   ),
                 ],
@@ -229,6 +206,36 @@ class _PersonScreenState extends State<PersonScreen> {
           },
         );
       },
+    );
+  }
+
+
+  void _showFancySnackBar(String message, IconData icon, Color iconColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: iconColor),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 3),
+      ),
     );
   }
 
