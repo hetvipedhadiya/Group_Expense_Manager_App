@@ -39,4 +39,28 @@ class UserModel {
       'mobileNo': mobileNo,
     };
   }
+  // Convert to SQLite Map
+  Map<String, dynamic> toMap() {
+    return {
+      'hostId': hostId,
+      'email': email,
+      'password': password,
+      'mobileNo': mobileNo,
+      'createAt': createAt ?? DateTime.now().toIso8601String(),
+      'isActive': (isActive ?? true) ? 1 : 0,
+    };
+  }
+
+  // Convert from SQLite Map
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      hostId: map['hostId'],
+      email: map['email'],
+      password: map['password'],
+      confirmPassword: map['password'], // db doesn't store confirmPassword
+      mobileNo: map['mobileNo'],
+      createAt: map['createAt'],
+      isActive: map['isActive'] == 1,
+    );
+  }
 }

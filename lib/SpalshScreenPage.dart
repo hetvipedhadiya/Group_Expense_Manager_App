@@ -1,8 +1,8 @@
 import 'package:aswdc_flutter_pub/aswdc_flutter_pub.dart';
 import 'package:flutter/material.dart';
-import 'package:grocery/LoginPage.dart';
-import 'package:grocery/NewScreen.dart';
+import 'package:grocery/HomeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'design_system.dart';
 
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({super.key});
@@ -14,54 +14,28 @@ class SplashScreenPage extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreenPage> {
   @override
   void initState() {
-
     super.initState();
     _checkLoginStatus();
-
   }
 
   Future<void> _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 3)); // Splash duration
 
-    final prefs = await SharedPreferences.getInstance();
-    final hostID = prefs.getInt('hostID');
-
-    if (hostID != null) {
-      // HostID exists, go to NewScreen
+    // Offline-first approach: directly go to Homescreen
+    if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => NewScreen()),
-      );
-    } else {
-      // No hostID found, go to LoginScreen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => Homescreen()),
       );
     }
   }
-
-  // Future<void> _navigateToHome() async {
-  //   await Future.delayed(const Duration(milliseconds: 5000));
-  //   Navigator.of(context).pushReplacement(MaterialPageRoute(
-  //     builder: (context) => LoginScreen(),
-  //   ));
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade100, // Light Blue
-              Colors.purple.shade100, // Light Purple
-              Colors.pink.shade100, // Light Pink
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+        decoration: const BoxDecoration(
+          gradient: DesignSystem.premiumGradient,
         ),
-
         child: const SplashScreen(
           appLogo: "assets/logo4.png",
           appName: "Group Expense Manager",

@@ -51,4 +51,32 @@ class TransactionModel {
 
     return json;
   }
+
+  // Convert to SQLite Map
+  Map<String, dynamic> toMap() {
+    return {
+      if (expenseID != null) 'expenseID': expenseID,
+      'userID': userID,
+      'eventID': eventID,
+      'amount': Amount,
+      'transactionDate': transactionDate.toIso8601String(),
+      'transactionType': transactionType,
+      'description': description,
+      'hostId': hostId,
+    };
+  }
+
+  // Convert from SQLite Map
+  factory TransactionModel.fromMap(Map<String, dynamic> map) {
+    return TransactionModel(
+      expenseID: map['expenseID'],
+      userID: map['userID'],
+      eventID: map['eventID'],
+      Amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      transactionDate: DateTime.parse(map['transactionDate']),
+      transactionType: map['transactionType'],
+      description: map['description'],
+      hostId: map['hostId'],
+    );
+  }
 }

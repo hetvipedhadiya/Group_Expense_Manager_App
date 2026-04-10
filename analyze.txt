@@ -1,0 +1,32 @@
+﻿Analyzing GroupExpenseManager...                                
+
+warning - The include file 'package:flutter_lints/flutter.yaml' in 'D:\GroupExpenseManager\analysis_options.yaml' can't be found when analyzing 'D:\GroupExpenseManager' - analysis_options.yaml:10:10 - include_file_not_found
+   info - 'Table.fromTextArray' is deprecated and shouldn't be used. Use TableHelper.fromTextArray() instead - lib\ExpenseDetail.dart:296:12 - deprecated_member_use
+   info - 'Table.fromTextArray' is deprecated and shouldn't be used. Use TableHelper.fromTextArray() instead - lib\ExpenseDetail.dart:331:12 - deprecated_member_use
+warning - This class (or a class that this class inherits from) is marked as '@immutable', but one or more of its instance fields aren't final: CreateEventScreen.map - lib\FormScreen.dart:6:7 - must_be_immutable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\FormScreen.dart:72:37 - deprecated_member_use
+warning - This 'onError' handler must return a value assignable to 'bool', but ends without returning a value - lib\FormScreen.dart:200:110 - body_might_complete_normally_catch_error
+warning - This 'onError' handler must return a value assignable to 'bool', but ends without returning a value - lib\FormScreen.dart:211:86 - body_might_complete_normally_catch_error
+warning - The '?' is unnecessary because 'dynamic' is nullable without it - lib\Models\InsertEventModel.dart:2:10 - unnecessary_question_mark
+warning - The '?' is unnecessary because 'dynamic' is nullable without it - lib\Models\PersonModel.dart:3:10 - unnecessary_question_mark
+  error - Expected a method, getter, setter or operator declaration - lib\Models\TransactionModel.dart:83:1 - expected_executable
+warning - Unused import: 'dart:ui' - lib\Models\TransactionReportModel.dart:1:8 - unused_import
+warning - Unused import: 'package:fl_chart/fl_chart.dart' - lib\Models\TransactionReportModel.dart:3:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - lib\Models\TransactionReportModel.dart:4:8 - unused_import
+  error - Undefined class 'File' - lib\PersonForm.dart:100:39 - undefined_class
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\PersonForm.dart:137:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\PersonScreen.dart:98:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\PersonScreen.dart:126:34 - deprecated_member_use
+warning - Unused import: 'package:grocery/repositories/user_repository.dart' - lib\SignUp.dart:3:8 - unused_import
+  error - The method 'LoginSignUpApi' isn't defined for the type '_SignUpState' - lib\SignUp.dart:122:19 - undefined_method
+warning - The left operand can't be null, so the right operand is never executed - lib\TransactionForm.dart:40:66 - dead_null_aware_expression
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\TransactionForm.dart:150:45 - deprecated_member_use
+warning - Unused import: 'package:fl_chart/fl_chart.dart' - lib\TransactionScreen.dart:2:8 - unused_import
+warning - The value of the local variable 'integerType' isn't used - lib\database\database_helper.dart:38:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\demo.dart:33:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\demo.dart:109:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\demo.dart:151:34 - deprecated_member_use
+warning - Unused import: 'package:grocery/LoginPage.dart' - lib\main.dart:2:8 - unused_import
+warning - Unused import: 'package:pdf/pdf.dart' - lib\pdfAPI.dart:6:8 - unused_import
+   info - 'Table.fromTextArray' is deprecated and shouldn't be used. Use TableHelper.fromTextArray() instead - lib\pdfAPI.dart:59:40 - deprecated_member_use
+

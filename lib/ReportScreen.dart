@@ -1,87 +1,100 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:grocery/ReportAPI.dart';
-import 'package:grocery/TransactionAPI.dart';
+import 'package:grocery/design_system.dart';
+import 'package:grocery/services/expense_service.dart';
+import 'package:grocery/repositories/transaction_repository.dart';
 import 'package:intl/intl.dart';
-import 'package:animate_do/animate_do.dart';
 
 class ReportScreen extends StatefulWidget {
   final int eventId;
   final String eventName;
 
-  ReportScreen({required this.eventId, required this.eventName});
+  const ReportScreen({super.key, required this.eventId, required this.eventName});
 
   @override
   State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderStateMixin {
+class _ReportScreenState extends State<ReportScreen> {
   Map<String, dynamic> _reportData = {};
   List<Map<String, dynamic>> _reportMemberData = [];
   List<dynamic> _transactions = [];
-
-  Future<void> _fetchTransactions() async {
-    try {
-      List<dynamic> transactions = await TransactionAPI().getTransactionByEvent(widget.eventId);
-      setState(() {
-        _transactions = transactions;
-      });
-    } catch (e) {
-      print("Error fetching transactions: $e");
-    }
-  }
-
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchReportScreen();
-    _fetchMember();
-    _fetchTransactions();
+    _loadData();
   }
 
-  Future<void> _fetchMember() async {
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
     try {
-      List<Map<String, dynamic>> reportMemberData =
-      await ReportAPI().getTransactionodMember(widget.eventId);
-      setState(() {
-        _reportMemberData = reportMemberData;
-      });
-    } catch (e) {
-      print("Error fetching report data: $e");
-    }
-  }
+      final report = await ExpenseService().getOverallReport(widget.eventId);
+      final members = await ExpenseService().getMemberReport(widget.eventId);
+      final txs = await TransactionRepository().getTransactionByEvent(widget.eventId);
 
-  void _fetchReportScreen() async {
-    try {
-      Map<String, dynamic> reportData =
-      await ReportAPI().getAllReport(widget.eventId);
       setState(() {
-        _reportData = reportData;
+        _reportData = report;
+        _reportMemberData = members;
+        _transactions = txs;
+        _isLoading = false;
       });
     } catch (e) {
-      print("Error fetching report data: $e");
+      debugPrint("Error loading report: $e");
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              if (_reportData.isNotEmpty) FadeInDown(child: _buildSummaryCard()),
-              const SizedBox(height: 20,),
-              if (_transactions.isNotEmpty)
-                FadeIn(child: _buildTransactionSection(_transactions)),
-              const SizedBox(height: 20),
-              FadeInUp(child: _buildPieChart()),
-              const SizedBox(height: 20),
-              FadeIn(child: _buildTable()),
+    if (_isLoading) {
+      return Container(
+        color: DesignSystem.backgroundSoft,
+        child: const Center(child: CircularProgressIndicator(color: DesignSystem.accent)),
+      );
+    }
 
+    return Scaffold(
+      backgroundColor: DesignSystem.backgroundSoft,
+
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              DesignSystem.primary.withOpacity(0.05),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildChartSection(),
+              const SizedBox(height: 24),
+              _buildSummaryCards(),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Recent History", style: DesignSystem.titleLarge),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("See All", style: DesignSystem.labelMedium.copyWith(color: DesignSystem.accent)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildTransactionList(),
+              const SizedBox(height: 32),
+              Text("Member Report", style: DesignSystem.titleLarge),
+              const SizedBox(height: 16),
+              _buildMemberDetailedTable(),
+              const SizedBox(height: 60),
             ],
           ),
         ),
@@ -89,40 +102,248 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildTransactionSection(List<dynamic> transactions) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: transactions.map((transaction) {
-        bool isCredit = transaction['transactionType'] == 'credit';
-        double amount = (transaction['amount'] as num).toDouble();
-        String formattedAmount = "₹${NumberFormat("#,##0.00", "en_IN").format(amount)}";
+  Widget _buildChartSection() {
+    double totalIncome = (_reportData['totalIncome'] ?? 0).toDouble();
+    double totalExpense = (_reportData['totalExpense'] ?? 0).toDouble();
+    double remaining = totalIncome - totalExpense;
 
-        return Container(
-          color: Colors.white,
-          child: Card(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isCredit ? Colors.green : Colors.red,
-                child: Icon(Icons.category, color: Colors.white),
-              ),
-              title: Text(
-                transaction['userName'],
-                style: TextStyle(fontWeight: FontWeight.bold, color : Colors.black,fontSize: 16),
-              ),
-              subtitle: Text(
-                transaction['transactionDate'].toString().split('T')[0],
-                style: TextStyle(fontSize: 15,color: Colors.black),
-              ),
-              trailing: Text(
-                formattedAmount,
-                style: TextStyle(
-                  color: isCredit ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: DesignSystem.cardBorderRadius,
+        boxShadow: DesignSystem.softShadow,
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Overview", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: DesignSystem.primary)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DesignSystem.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  DateFormat('MMMM yyyy').format(DateTime.now()),
+                  style: DesignSystem.caption.copyWith(color: DesignSystem.accent, fontWeight: FontWeight.bold),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sectionsSpace: 6,
+                    centerSpaceRadius: 65,
+                    startDegreeOffset: -90,
+                    sections: [
+                      PieChartSectionData(
+                        color: DesignSystem.income,
+                        value: totalIncome > 0 ? totalIncome : 1,
+                        radius: 20,
+                        showTitle: false,
+                        badgeWidget: _badgeIcon(Icons.arrow_upward, DesignSystem.income),
+                        badgePositionPercentageOffset: 1.1,
+                      ),
+                      PieChartSectionData(
+                        color: DesignSystem.expense,
+                        value: totalExpense > 0 ? totalExpense : 0,
+                        radius: 25,
+                        showTitle: false,
+                        badgeWidget: _badgeIcon(Icons.arrow_downward, DesignSystem.expense),
+                        badgePositionPercentageOffset: 1.1,
+                      ),
+                      if (remaining > 0)
+                        PieChartSectionData(
+                          color: DesignSystem.primary.withOpacity(0.2),
+                          value: remaining,
+                          radius: 15,
+                          showTitle: false,
+                        ),
+                    ],
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("BALANCE", style: DesignSystem.labelMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      "₹${NumberFormat("#,##,##0", "en_IN").format(remaining)}",
+                      style: DesignSystem.headlineSmall.copyWith(
+                        color: remaining >= 0 ? DesignSystem.income : DesignSystem.expense,
+                        fontSize: 22,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _chartLegend("Income", DesignSystem.income),
+              _chartLegend("Expense", DesignSystem.expense),
+              _chartLegend("Savings", DesignSystem.primary.withOpacity(0.3)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _badgeIcon(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: DesignSystem.softShadow,
+      ),
+      child: Icon(icon, size: 14, color: color),
+    );
+  }
+
+  Widget _chartLegend(String label, Color color) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(label, style: DesignSystem.bodyMedium.copyWith(fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: _summaryBox(
+            "Total Income",
+            _reportData['totalIncome'] ?? 0,
+            DesignSystem.income,
+            Icons.account_balance_wallet_outlined,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _summaryBox(
+            "Total Expense",
+            _reportData['totalExpense'] ?? 0,
+            DesignSystem.expense,
+            Icons.shopping_cart_outlined,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryBox(String label, num value, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: DesignSystem.cardBorderRadius,
+        boxShadow: DesignSystem.softShadow,
+        border: Border.all(color: color.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 16),
+          Text(label, style: DesignSystem.caption),
+          const SizedBox(height: 4),
+          FittedBox(
+            child: Text(
+              "₹${NumberFormat("#,##,##0", "en_IN").format(value)}",
+              style: TextStyle(color: DesignSystem.primary, fontWeight: FontWeight.w900, fontSize: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionList() {
+    if (_transactions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text("No transactions yet", style: DesignSystem.bodyMedium),
+        ),
+      );
+    }
+
+    return Column(
+      children: _transactions.take(5).map((tx) {
+        bool isCredit = tx['transactionType'] == 'credit';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (isCredit ? DesignSystem.income : DesignSystem.expense).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isCredit ? Icons.add_rounded : Icons.remove_rounded,
+                color: isCredit ? DesignSystem.income : DesignSystem.expense,
+                size: 20,
+              ),
+            ),
+            title: Text(tx['userName'], style: DesignSystem.titleLarge.copyWith(fontSize: 16)),
+            subtitle: Text(
+              DateFormat('dd MMM, yyyy').format(DateTime.parse(tx['transactionDate'])),
+              style: DesignSystem.caption,
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "${isCredit ? '+' : '-'} ₹${NumberFormat("#,##,##0", "en_IN").format(tx['amount'])}",
+                  style: TextStyle(
+                    color: isCredit ? DesignSystem.income : DesignSystem.expense,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  isCredit ? "Income" : "Expense",
+                  style: DesignSystem.caption.copyWith(fontSize: 10, color: isCredit ? DesignSystem.income : DesignSystem.expense),
+                ),
+              ],
             ),
           ),
         );
@@ -130,175 +351,84 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildSummaryCard() {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   colors: [Color(0xFF1B1B2F), Color(0xFF162447)],
-          // ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _summaryRow("Total Income:", _reportData['totalIncome'] ?? 0, Colors.green),
-            _summaryRow("Total Expense:", _reportData['totalExpense'] ?? 0, Colors.pinkAccent),
-            _summaryRow("Expense Per Head:", _reportData['expensePerHead'] ?? 0, Colors.blueAccent),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildMemberDetailedTable() {
+    if (_reportMemberData.isEmpty) return const SizedBox();
 
-  Widget _summaryRow(String label, num value, Color color) {
-    final currencyFormat = NumberFormat.currency(locale: "en_IN", symbol: "₹");
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: DesignSystem.cardBorderRadius,
+        boxShadow: DesignSystem.softShadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Table(
+        columnWidths: const {
+          0: FlexColumnWidth(2.5),
+          1: FlexColumnWidth(2),
+          2: FlexColumnWidth(2),
+          3: FlexColumnWidth(2.5),
+        },
         children: [
-          Text(label, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-          Text(currencyFormat.format(value), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: color)),
+          // Header Row
+          TableRow(
+            decoration: BoxDecoration(color: DesignSystem.primary.withOpacity(0.03)),
+            children: [
+              _tableHeader("Member"),
+              _tableHeader("Income"),
+              _tableHeader("Expense"),
+              _tableHeader("Balance"),
+            ],
+          ),
+          // Data Rows
+          ..._reportMemberData.map((row) {
+            final income = (row['income'] ?? 0).toDouble();
+            final expense = (row['expense'] ?? 0).toDouble();
+            final balance = income - expense;
+
+            return TableRow(
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: DesignSystem.outlineVariant, width: 1)),
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(row['member'], style: DesignSystem.bodyMedium.copyWith(color: DesignSystem.primary, fontWeight: FontWeight.bold)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text("₹${income.toStringAsFixed(0)}", style: DesignSystem.bodyMedium.copyWith(color: DesignSystem.income)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text("₹${expense.toStringAsFixed(0)}", style: DesignSystem.bodyMedium.copyWith(color: DesignSystem.expense)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "₹${balance.toStringAsFixed(0)}",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: balance >= 0 ? DesignSystem.income : DesignSystem.expense,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildPieChart() {
-    double totalIncome = (_reportData['totalIncome'] ?? 0).toDouble();
-    double totalExpense = (_reportData['totalExpense'] ?? 0).toDouble();
-    double remainingAmount = totalIncome - totalExpense;
-
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   colors: [Color(0xFF1B1B2F), Color(0xFF162447)],
-          // ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            const Text("Financial Breakdown", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 250,
-              child: PieChart(
-                PieChartData(
-                  sectionsSpace: 4,
-                  centerSpaceRadius: 40,
-                  startDegreeOffset: 180,
-                  sections: [
-                    PieChartSectionData(color: Color(0xFF00FFCC), value: totalIncome, title: 'Income', radius: 90, titleStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                    PieChartSectionData(color: Color(0xFFFF3366), value: totalExpense, title: 'Expense', radius: 90, titleStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                    PieChartSectionData(color: Color(0xFF3366FF), value: remainingAmount, title: 'Remaining', radius: 90, titleStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTable() {
-    final currencyFormat = NumberFormat.currency(locale: "en_IN", symbol: "₹");
-
-    return Card(
-
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          //gradient: LinearGradient(colors: [Color(0xFF1B1B2F), Color(0xFF162447)]),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Members Summary", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Table(
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(2),
-                2: FlexColumnWidth(2),
-                3: FlexColumnWidth(2),
-              },
-              border: TableBorder(horizontalInside: BorderSide(color: Colors.grey, width: 0.3)),
-              children: [
-                TableRow(
-                  decoration: BoxDecoration(color: Colors.white12),
-                  children: [
-                    _tableHeaderCell("Member"),
-                    _tableHeaderCell("Income"),
-                    _tableHeaderCell("Expense"),
-                    _tableHeaderCell("Remaining"),
-                  ],
-                ),
-                ..._reportMemberData.map((row) {
-                  final income = (row['income'] ?? 0).toDouble();
-                  final expense = (row['expense'] ?? 0).toDouble();
-                  final remaining = income - expense;
-
-                  return TableRow(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(row['member'],style: TextStyle(
-                          color: Colors.black
-                        ),
-                        ),
-
-
-                      ),
-                   //   _tableTextCell(row['member'].toString(), Colors.white),
-                      _tableTextCell(currencyFormat.format(income), Colors.green),
-                      _tableTextCell(currencyFormat.format(expense), Colors.pinkAccent),
-                      _tableTextCell(
-                        currencyFormat.format(remaining.abs()),
-                        remaining >= 0 ? Colors.green : Colors.redAccent,
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tableHeaderCell(String text) {
+  Widget _tableHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
       child: Text(
         text,
-        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        textAlign: TextAlign.center,
+        style: DesignSystem.labelMedium.copyWith(color: DesignSystem.textSecondary, fontWeight: FontWeight.w800),
       ),
     );
   }
-
-  Widget _tableTextCell(String text, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        text,
-        style: TextStyle(color: color, fontSize: 16),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
 }
